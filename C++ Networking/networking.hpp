@@ -9,8 +9,14 @@
 #include <utility>
 #include <vector>
 #include <concepts>
+#include <stdexcept>
 
 namespace SE7 {
+	class map_insertion_error : public std::runtime_error {
+	public:
+		map_insertion_error() : std::runtime_error("map insertion error") {}
+	};
+
 	namespace networking {
 		using html_node_id = std::uintmax_t;
 		using html_attribute_id = std::uintmax_t;
@@ -25,11 +31,15 @@ namespace SE7 {
 		constexpr html_attribute_id id_id = 0U;
 		constexpr html_attribute_id class_id = 1U;
 
+		class html_node;
+
 		class html_attribute {
 		private:
 			const html_attribute_id attribute_id;
 			std::string name;
 			std::string data;
+
+			friend html_node;
 		public:
 			html_attribute(
 				html_attribute_id attr_id, 
@@ -63,6 +73,8 @@ namespace SE7 {
 			const std::string name;
 			std::map<html_attribute_id, html_attribute> attributes;
 			std::map<html_node_id, html_node> children;
+
+			friend html_attribute;
 
 			std::string to_string_all_including_sub_tags_impl(
 				bool include_indentation_and_newlines = false,
@@ -98,6 +110,22 @@ namespace SE7 {
 				std::initializer_list<std::pair<const html_attribute_id, html_attribute>> attr = {},
 				std::initializer_list<std::pair<const html_node_id, html_node>> ch = {}
 			) : node_id(nid), name(nm), attributes(attr), children(ch) {}
+
+			html_node &add_child(html_node &&hn) {
+				if (auto [it, success] = this->children.insert({ hn.node_id, hn }); !success) {
+					throw map_insertion_error();
+				}
+
+				return *this;
+			}
+
+			html_node &add_attribute(html_attribute &&ha) {
+				if (auto [it, success] = this->attributes.insert({ ha.attribute_id, ha }); !success) {
+					throw map_insertion_error();
+				}
+
+				return *this;
+			}
 
 			html_node get_child(html_node_id node_id) const {
 				return this->children.at(node_id);
@@ -207,6 +235,12 @@ namespace SE7 {
 			html_node root_node;
 		public:
 			html_doc() : root_node(make_html_node_html()) {}
+
+			html_doc &add_child(html_node &&hn) {
+				this->root_node.add_child(std::move(hn));
+
+				return *this;
+			}
 		};
 	}
 }
