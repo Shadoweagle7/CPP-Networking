@@ -42,11 +42,13 @@ int main() {
         }
     );
 
-    std::cout << test.to_string_all_including_sub_tags(true, true) << "\n";
-
     SE7::networking::html_doc html_document;
 
     html_document.add_child(std::move(test));
+
+    if (!html_document.write("index.html", true, true)) {
+        std::cout << "Failed to write to index.html\n";
+    }
 
     return 0;
 }

@@ -10,6 +10,8 @@
 #include <vector>
 #include <concepts>
 #include <stdexcept>
+#include <iostream>
+#include <fstream>
 
 namespace SE7 {
 	class map_insertion_error : public std::runtime_error {
@@ -241,7 +243,51 @@ namespace SE7 {
 
 				return *this;
 			}
+
+			std::string to_string(
+				bool include_indentation_and_newlines = false,
+				bool quote_attributes = true
+			) {
+				return this->root_node.to_string_all_including_sub_tags(
+					include_indentation_and_newlines,
+					quote_attributes
+				);
+			}
+
+			bool write(
+				const std::string &filename,
+				bool include_indentation_and_newlines = false,
+				bool quote_attribute = true
+			) {
+				std::fstream file(
+					filename, 
+					std::ios_base::in | 
+					std::ios_base::out | 
+					std::ios_base::trunc
+				);
+
+				if (!file.is_open()) {
+					return false;
+				}
+
+				file << this->to_string(
+					include_indentation_and_newlines,
+					quote_attribute
+				);
+
+				file.close();
+
+				return true;
+			}
+
+			friend std::ostream &operator<<(std::ostream &os, const html_doc &hd);
 		};
+
+		std::ostream &operator<<(std::ostream &os, html_doc &hd) {
+			os << hd.to_string(true, true);
+
+			return os;
+		}
 	}
 }
 
